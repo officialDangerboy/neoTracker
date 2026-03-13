@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
@@ -67,6 +68,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'change_this_in_production_' + Math.random(),
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGO_URI,
+    ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+    autoRemove: 'native'
+  }),
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
