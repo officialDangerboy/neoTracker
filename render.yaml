@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: geotrack
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATA_DIR
+        value: /opt/render/project/data
+    disk:
+      name: data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

