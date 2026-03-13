@@ -67,7 +67,6 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'change_this_in_production_' + Math.random(),
   resave: false,
   saveUninitialized: false,
-  store: new MongoStore({ mongooseConnection: mongoose.connection, ttl: 7 * 24 * 60 * 60 }),
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
