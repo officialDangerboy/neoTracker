@@ -60,8 +60,8 @@ A self-hosted location-tracking link platform. Create short-lived tracking links
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/officialDangerboy/neoTracker.git
-cd neotrack
+git clone https://github.com/officialDangerboy/geoTracker.git
+cd geoTrack
 
 # 2. Install dependencies
 npm install
