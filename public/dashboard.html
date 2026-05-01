@@ -493,7 +493,7 @@ function renderHits(data) {
         if (ip.includes('.') && !ip.includes('::')) {
           const parts = ip.split('.');
           if (parts.length === 4) {
-            ipDisplay = `${parts[0]}.${parts[1]}.${parts[2]}.${parts[3]}`;
+            ipDisplay = ip;
           } else {
             ipDisplay = ip;
           }
