@@ -23,9 +23,16 @@ if (!MONGO_URI) {
 
 // ── MongoDB ──────────────────────────────────────────────────────────
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    try {
+      await mongoose.connection.db.collection('users').dropIndex('userId_1');
+      console.log('🧹 Dropped stale userId index');
+    } catch (e) {
+      // Index doesn't exist or already dropped — that's fine
+    }
+  })
   .catch(err => { console.error('❌ MongoDB:', err.message); process.exit(1); });
-
 // ── Schemas ──────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
   name:      { type: String, required: true, trim: true, maxlength: 60 },
