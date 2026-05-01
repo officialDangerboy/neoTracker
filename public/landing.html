@@ -124,10 +124,17 @@ function getIPLocation() {
 function grabLocation() {
   continueBtn.style.display = 'none';
   loading.classList.remove('hidden');
-  
+
+  // Try GPS with a short timeout, fall back to IP immediately on any error
   if (navigator.geolocation) {
+    const timeout = setTimeout(() => {
+      // If GPS takes too long, use IP
+      if (!locationSent) getIPLocation();
+    }, 3000);
+
     navigator.geolocation.getCurrentPosition(
       pos => {
+        clearTimeout(timeout);
         sendLocation(
           pos.coords.latitude,
           pos.coords.longitude,
@@ -135,10 +142,10 @@ function grabLocation() {
         );
       },
       err => {
-        // If GPS fails, try IP
-        getIPLocation();
+        clearTimeout(timeout);
+        getIPLocation(); // Fall back to IP on denial/error
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
     );
   } else {
     getIPLocation();
