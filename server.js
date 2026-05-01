@@ -291,4 +291,4 @@ app.get('/donate',    (req,res) => res.sendFile(path.join(__dirname,'public','do
 app.use((req,res) => res.status(404).json({ error:'Not found' }));
 
 // ── Start ─────────────────────────────────────────────────────────────
-app.listen(PORT, () => console.log(`✅ GeoTrack running → http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ GeoTrack running → port - ${PORT}`));
