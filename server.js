@@ -26,10 +26,10 @@ mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('✅ MongoDB connected');
     try {
-      await mongoose.connection.db.collection('users').dropIndex('userId_1');
-      console.log('🧹 Dropped stale userId index');
+      await mongoose.connection.db.collection('users').dropIndexes();
+      console.log('🧹 Dropped all stale indexes on users');
     } catch (e) {
-      // Index doesn't exist or already dropped — that's fine
+      console.log('No indexes to drop:', e.message);
     }
   })
   .catch(err => { console.error('❌ MongoDB:', err.message); process.exit(1); });
